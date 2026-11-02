@@ -1,7 +1,7 @@
 # 초기 개발 환경
 
 - Unity Hub와 Unity 6000.3.27f2를 설치했다.
-- Android 모듈과 SDK·NDK·JDK 설치를 요청했다. 모듈별 완료 여부는 Hub에서 확인한다.
+- Android 모듈과 SDK·NDK 설치 완료. Hub에서 OpenJDK도 이미 설치된 상태임을 확인했다.
 - 패키지 기본 설정: URP 17.3.0, Input System 1.20.1. 실제 복원과 컴파일은 아직 미검증이며 lock 파일은 에디터 복원 후 생성한다.
 - Git 저장소를 초기화하고 Unity 생성물·개인 설정·설치 로그를 제외했다. 원격은 설정하지 않았다.
 

@@ -17,8 +17,9 @@
 
 ## 초기 구성 후속
 
-- Unity Hub, Unity 6000.3.27f2 설치 완료. Android 모듈과 SDK·NDK·JDK 설치 진행.
+- Unity Hub, Unity 6000.3.27f2, Android 모듈·SDK·NDK 설치 완료. OpenJDK는 Hub에서 이미 설치됨을 확인했다.
 - Git 초기화와 Unity 제외 규칙 추가. 이동·추적 카메라 및 URP 테스트 씬 생성 소스 작성, 메타 GUID 추가.
 - 패키지 manifest와 에디터 버전 지정. README·AGENTS·SETUP 갱신.
 - 에디터 실행은 라이선스 부재로 종료(198). 컴파일·패키지 복원·씬 생성·플레이·빌드는 미검증.
 - 다음 작업: Hub 로그인과 무료 라이선스 활성화, 실제 에디터 검증, Android 기준 기기 확정. 앞선 Unity 버전·Git 준비 항목은 이번 작업으로 진행했다.
+- 메타 파일의 불필요한 후행 공백을 제거하고 diff 검사를 통과했다. 기존 설계 문서의 Markdown 줄바꿈 공백은 유지했다. 초기 구성은 Git에 기록했으며 원격 push는 하지 않았다.
