@@ -79,6 +79,48 @@ namespace ZombieSurvivor.Editor
             yield return null;
             Check(Vector3.Distance(camera.transform.position - player.transform.position, new Vector3(0, 18, -12)) < .01f, "camera must follow");
             InputSystem.RemoveDevice(keyboard);
+            var session = FindFirstObjectByType<EncounterSession>();
+            if (session == null) { Check(false, "encounter missing"); EditorApplication.Exit(1); yield break; }
+            session.Restart();
+            session.enabled = false; // Keep spawns under test control; enemies still run normally.
+            yield return null;
+            yield return null;
+            Check(session.TrySpawn(), "spawn should find offscreen location");
+            var enemy = session.Enemies[0];
+            var planes = GeometryUtility.CalculateFrustumPlanes(camera);
+            Check(!GeometryUtility.TestPlanesAABB(planes, new Bounds(enemy.transform.position, new Vector3(1.5f, 2.5f, 1.5f))), "spawn must be outside view");
+            Check(Vector3.Distance(enemy.transform.position, player.transform.position) >= session.Settings.minimumSpawnDistance, "spawn minimum distance");
+            float distance = Vector3.Distance(enemy.transform.position, player.transform.position);
+            yield return new WaitForSeconds(.25f);
+            Check(Vector3.Distance(enemy.transform.position, player.transform.position) < distance, "enemy must approach player");
+            enemy.transform.position = player.transform.position;
+            yield return null;
+            yield return null;
+            Check(session.PlayerHealth.Current == 90, "contact damage once");
+            Check(!session.PlayerHealth.TakeDamage(10), "immunity must block repeated damage");
+            yield return new WaitForSeconds(.8f);
+            Check(session.PlayerHealth.Current == 80, "contact damage resumes after immunity");
+            enemy.Health.TakeDamage(100);
+            enemy.Health.TakeDamage(100);
+            Check(session.Kills == 1 && session.ActiveCount == 0, "enemy death counted once and pooled");
+            Check(session.TrySpawn() && session.Enemies.Count == 1 && enemy.Health.Current == enemy.Health.Maximum, "pooled enemy health reset");
+            while (session.ActiveCount < session.Settings.populationLimit)
+                if (!session.TrySpawn()) { Check(false, "cannot fill population"); break; }
+            Check(!session.TrySpawn() && session.ActiveCount == session.Settings.populationLimit, "population cap");
+            int deaths = 0;
+            session.PlayerHealth.Died += () => deaths++;
+            yield return new WaitForSeconds(.8f);
+            session.PlayerHealth.TakeDamage(1000);
+            session.PlayerHealth.TakeDamage(1000);
+            Check(deaths == 1 && !session.IsRunning && !player.enabled, "player death stops encounter once");
+            Vector3 stopped = enemy.transform.position;
+            float elapsed = session.Elapsed;
+            yield return new WaitForSeconds(.2f);
+            Check(enemy.transform.position == stopped && session.Elapsed == elapsed, "death freezes enemies and timer");
+            session.Restart();
+            Check(session.ActiveCount == 0 && session.Kills == 0 && session.Elapsed == 0 && session.PlayerHealth.Current == 100 && player.enabled, "restart clears encounter state");
+            Check(session.PlayerHealth.TakeDamage(1), "restart clears immunity");
+            Debug.Log(failed ? "ENCOUNTER VERIFICATION FAILED" : "ENCOUNTER VERIFICATION PASSED");
             Debug.Log(failed ? "MOVEMENT VERIFICATION FAILED" : "MOVEMENT VERIFICATION PASSED");
             EditorApplication.Exit(failed ? 1 : 0);
         }
