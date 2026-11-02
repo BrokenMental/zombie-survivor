@@ -30,3 +30,4 @@
 - Unity 6000.3.27f2 배치 실행 종료 코드 0. 패키지 복원·C# 컴파일·Arena 씬·URP 자산 생성 완료.
 - 생성된 패키지 lock과 Unity 프로젝트 설정·씬·자산을 버전 관리에 포함했다.
 - 실제 플레이·Android 빌드·실기기 성능은 미검증이다. 다음 작업은 Arena 조작 확인과 기준 Android 기기 선정이다.
+- 생성된 기본 설정이 구 입력 방식으로 되어 있어 Input System 전용(activeInputHandler: 1)으로 맞췄다.
