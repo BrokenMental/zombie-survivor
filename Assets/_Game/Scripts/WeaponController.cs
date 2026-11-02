@@ -83,7 +83,8 @@ namespace ZombieSurvivor
         private void OnGUI()
         {
             if (Session == null || !Session.IsRunning) return;
-            if (GUI.Button(new Rect(Screen.width - 190, Screen.height - 100, 175, 70), ActiveWeapon.displayName + "\nSwitch (Space)")) SwitchWeapon();
+            using (new PrototypeGUI(true))
+                if (GUI.Button(new Rect(PrototypeGUI.Width - 190, PrototypeGUI.Height - 100, 175, 70), ActiveWeapon.displayName + "\nSwitch (Space)")) SwitchWeapon();
         }
     }
 }

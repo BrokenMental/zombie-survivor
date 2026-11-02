@@ -35,9 +35,10 @@ namespace ZombieSurvivor
                 {
                     if (!touch.press.isPressed) continue;
                     Vector2 position = touch.position.ReadValue();
+                    Vector2 pressedAt = touch.startPosition.ReadValue();
                     int id = touch.touchId.ReadValue();
-                    if (touchId < 0 && touch.press.wasPressedThisFrame && position.x < Screen.width * .5f)
-                    { touchId = id; origin = position; }
+                    if (touchId < 0 && touch.press.wasPressedThisFrame && pressedAt.x < Screen.width * .5f)
+                    { touchId = id; origin = pressedAt; }
                     if (id != touchId) continue;
                     found = true;
                     input = Vector2.ClampMagnitude((position - origin) / (Screen.dpi > 0 ? Screen.dpi * .4f : 100f), 1f);
@@ -53,9 +54,17 @@ namespace ZombieSurvivor
 
         private void OnGUI()
         {
-            GUI.Label(new Rect(16, 16, 500, 32), "WASD / Arrow keys | Touch: drag on left half to move");
-            if (touchId >= 0)
-                GUI.Box(new Rect(origin.x - 35, Screen.height - origin.y - 35, 70, 70), "Move");
+            using (new PrototypeGUI(true))
+            {
+                GUI.Label(new Rect(16, 16, 448, 32), "Move: WASD / arrows | Touch: drag left");
+                if (touchId >= 0)
+                {
+                    Vector2 point = PrototypeGUI.FromScreen(origin);
+                    point.x = Mathf.Clamp(point.x, 35, PrototypeGUI.Width - 35);
+                    point.y = Mathf.Clamp(point.y, 35, PrototypeGUI.Height - 35);
+                    GUI.Box(new Rect(point.x - 35, point.y - 35, 70, 70), "Move");
+                }
+            }
         }
     }
 }

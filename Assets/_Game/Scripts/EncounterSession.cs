@@ -32,6 +32,7 @@ namespace ZombieSurvivor
 
         private void Start()
         {
+            Application.targetFrameRate = 60;
             PlayerHealth = Player.GetComponent<Health>();
             PlayerHealth.Died += OnPlayerDeath;
             ResetEncounter(false);
@@ -123,19 +124,27 @@ namespace ZombieSurvivor
         private void OnGUI()
         {
             if (PlayerHealth == null) return;
+            using (new PrototypeGUI(true))
+                DrawHUD();
+        }
+
+        private void DrawHUD()
+        {
+            float width = PrototypeGUI.Width;
+            float height = PrototypeGUI.Height;
             if (State == SessionState.Ready)
             {
-                GUI.Box(new Rect(Screen.width / 2f - 140, Screen.height / 2f - 100, 280, 190), "Zombie Survivor\nSurvive for 3 minutes\nMove: WASD / left touch drag\nSwitch weapon: Space / right button");
-                if (GUI.Button(new Rect(Screen.width / 2f - 100, Screen.height / 2f + 25, 200, 45), "Start (Enter)")) Restart();
+                GUI.Box(new Rect(width / 2f - 140, height / 2f - 100, 280, 190), "Zombie Survivor\nSurvive for 3 minutes\nMove: WASD / left touch drag\nSwitch weapon: Space / right button");
+                if (GUI.Button(new Rect(width / 2f - 100, height / 2f + 25, 200, 45), "Start (Enter)")) Restart();
                 return;
             }
-            GUI.Label(new Rect(16, 50, 600, 30), $"HP {PlayerHealth.Current}/{PlayerHealth.Maximum}   Time {Elapsed:F0}/180   Enemies {ActiveCount}   Kills {Kills}");
+            GUI.Label(new Rect(16, 50, 448, 50), $"HP {PlayerHealth.Current}/{PlayerHealth.Maximum}   Time {Elapsed:F0}/180\nEnemies {ActiveCount}   Kills {Kills}");
             if (!IsRunning)
             {
                 string result = State == SessionState.Won ? "Survived!" : "Defeated";
-                GUI.Box(new Rect(Screen.width / 2f - 140, Screen.height / 2f - 100, 280, 210), $"{result}\nTime {Elapsed:F1}s   Kills {Kills}");
-                if (GUI.Button(new Rect(Screen.width / 2f - 100, Screen.height / 2f - 25, 200, 45), "Restart (R)")) Restart();
-                if (GUI.Button(new Rect(Screen.width / 2f - 100, Screen.height / 2f + 35, 200, 45), "Title")) ReturnToTitle();
+                GUI.Box(new Rect(width / 2f - 140, height / 2f - 100, 280, 210), $"{result}\nTime {Elapsed:F1}s   Kills {Kills}");
+                if (GUI.Button(new Rect(width / 2f - 100, height / 2f - 25, 200, 45), "Restart (R)")) Restart();
+                if (GUI.Button(new Rect(width / 2f - 100, height / 2f + 35, 200, 45), "Title")) ReturnToTitle();
             }
         }
     }

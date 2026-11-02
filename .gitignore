@@ -19,3 +19,4 @@
 /hub-*.tmp
 /Logs/
 /unity-*.log
+/.utmp/
