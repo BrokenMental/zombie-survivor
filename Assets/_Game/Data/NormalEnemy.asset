@@ -16,6 +16,5 @@ MonoBehaviour:
   speed: 2
   contactDamage: 10
   contactRadius: 1
-  spawnInterval: 1.5
-  populationLimit: 30
   minimumSpawnDistance: 8
+  color: {r: 0.25, g: 0.55, b: 0.2, a: 1}

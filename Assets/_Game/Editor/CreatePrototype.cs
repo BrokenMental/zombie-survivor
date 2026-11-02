@@ -68,6 +68,23 @@ namespace ZombieSurvivor.Editor
             session.ArenaCamera = camera.GetComponent<Camera>();
             session.EnemyPrefab = prefab.GetComponent<EnemyController>();
             session.Settings = enemySettings;
+            var fast = AssetDatabase.LoadAssetAtPath<EnemySettings>("Assets/_Game/Data/FastEnemy.asset");
+            if (fast == null)
+            {
+                fast = ScriptableObject.CreateInstance<EnemySettings>();
+                fast.health = 20;
+                fast.speed = 3.5f;
+                fast.color = new Color(.85f, .35f, .15f);
+                AssetDatabase.CreateAsset(fast, "Assets/_Game/Data/FastEnemy.asset");
+            }
+            var waves = AssetDatabase.LoadAssetAtPath<WaveSettings>("Assets/_Game/Data/PrototypeWaves.asset");
+            if (waves == null)
+            {
+                waves = ScriptableObject.CreateInstance<WaveSettings>();
+                AssetDatabase.CreateAsset(waves, "Assets/_Game/Data/PrototypeWaves.asset");
+            }
+            session.FastSettings = fast;
+            session.Waves = waves;
             var pistol = AssetDatabase.LoadAssetAtPath<WeaponSettings>("Assets/_Game/Data/Pistol.asset");
             if (pistol == null)
             {

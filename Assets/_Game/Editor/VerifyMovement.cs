@@ -60,6 +60,16 @@ namespace ZombieSurvivor.Editor
             var camera = Camera.main;
             if (player == null || camera == null) { EditorApplication.Exit(1); yield break; }
             yield return null;
+            var session = FindFirstObjectByType<EncounterSession>();
+            if (session == null) { EditorApplication.Exit(1); yield break; }
+            Check(session.State == EncounterSession.SessionState.Ready && !player.enabled && session.ActiveCount == 0, "title waits for start");
+            yield return new WaitForSeconds(.1f);
+            Check(session.Elapsed == 0 && session.Weapons.ShotsFired == 0, "title must not advance combat");
+            InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.Enter));
+            yield return null;
+            yield return null;
+            Check(session.IsRunning && player.enabled, "Enter starts play");
+            InputSystem.QueueStateEvent(keyboard, new KeyboardState());
             Vector3 start = player.transform.position;
             InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.W));
             yield return new WaitForSeconds(.5f);
@@ -79,7 +89,6 @@ namespace ZombieSurvivor.Editor
             yield return null;
             Check(Vector3.Distance(camera.transform.position - player.transform.position, new Vector3(0, 18, -12)) < .01f, "camera must follow");
             InputSystem.RemoveDevice(keyboard);
-            var session = FindFirstObjectByType<EncounterSession>();
             if (session == null) { Check(false, "encounter missing"); EditorApplication.Exit(1); yield break; }
             var weapons = session.Weapons;
             weapons.enabled = false; // Isolate contact-damage checks from automatic fire.
@@ -106,9 +115,9 @@ namespace ZombieSurvivor.Editor
             enemy.Health.TakeDamage(100);
             Check(session.Kills == 1 && session.ActiveCount == 0, "enemy death counted once and pooled");
             Check(session.TrySpawn() && session.Enemies.Count == 1 && enemy.Health.Current == enemy.Health.Maximum, "pooled enemy health reset");
-            while (session.ActiveCount < session.Settings.populationLimit)
+            while (session.ActiveCount < session.CurrentWave.populationLimit)
                 if (!session.TrySpawn()) { Check(false, "cannot fill population"); break; }
-            Check(!session.TrySpawn() && session.ActiveCount == session.Settings.populationLimit, "population cap");
+            Check(!session.TrySpawn() && session.ActiveCount == session.CurrentWave.populationLimit, "population cap");
             int deaths = 0;
             session.PlayerHealth.Died += () => deaths++;
             yield return new WaitForSeconds(.8f);
@@ -189,6 +198,45 @@ namespace ZombieSurvivor.Editor
             Check(weapons.ShotsFired == shotsAtDeath, "death stops firing");
             session.Restart();
             Check(weapons.ActiveSlot == 0 && weapons.ShotsFired == 0 && weapons.ActiveProjectiles == 0, "restart clears weapon and projectile state");
+            weapons.enabled = false;
+            foreach (var pooled in session.Enemies) pooled.enabled = true;
+            Check(session.CurrentWave.fastEvery == 0 && session.CurrentWave.populationLimit == 30, "initial wave reset");
+            session.Advance(59);
+            Check(session.CurrentWave.fastEvery == 0 && session.IsRunning, "wave before 60 seconds");
+            session.Advance(1);
+            Check(session.CurrentWave.fastEvery == 3 && session.CurrentWave.populationLimit == 60, "60-second wave transition");
+            while (session.ActiveCount < 3)
+                if (!session.TrySpawn()) { Check(false, "cannot spawn wave mixture"); EditorApplication.Exit(1); yield break; }
+            var runner = session.Enemies[2];
+            Check(runner.Definition == session.FastSettings && runner.Health.Current == 20, "wave mixes fast zombies");
+            session.Enemies[0].transform.position = new Vector3(6, 1, 12);
+            runner.transform.position = new Vector3(0, 1, 12);
+            float normalBefore = Vector3.Distance(session.Enemies[0].transform.position, player.transform.position);
+            float fastBefore = Vector3.Distance(runner.transform.position, player.transform.position);
+            yield return new WaitForSeconds(.2f);
+            float normalTravel = normalBefore - Vector3.Distance(session.Enemies[0].transform.position, player.transform.position);
+            float fastTravel = fastBefore - Vector3.Distance(runner.transform.position, player.transform.position);
+            Check(fastTravel > normalTravel * 1.4f, "fast zombie approaches faster than normal");
+            session.Advance(60);
+            Check(session.CurrentWave.populationLimit == 100 && session.CurrentWave.fastEvery == 2 && session.CurrentWave.spawnInterval == .5f, "120-second wave transition");
+            session.Advance(59.9f);
+            Check(session.IsRunning, "must survive full 180 seconds");
+            session.Advance(.2f);
+            Check(session.State == EncounterSession.SessionState.Won && session.Elapsed == 180 && !player.enabled, "180-second victory");
+            int countAtWin = session.ActiveCount;
+            Vector3 frozen = runner.transform.position;
+            yield return new WaitForSeconds(.2f);
+            session.Advance(10);
+            Check(session.Elapsed == 180 && runner.transform.position == frozen && session.ActiveCount == countAtWin && !session.TrySpawn(), "victory freezes time enemies and spawns");
+            session.PlayerHealth.TakeDamage(1000);
+            Check(session.State == EncounterSession.SessionState.Won, "result cannot change after victory");
+            session.Restart();
+            Check(session.IsRunning && session.Elapsed == 0 && session.Kills == 0 && session.ActiveCount == 0 && session.CurrentWave.fastEvery == 0, "restart after win resets wave and battle");
+            session.ReturnToTitle();
+            session.enabled = true;
+            yield return new WaitForSeconds(.2f);
+            Check(session.State == EncounterSession.SessionState.Ready && session.Elapsed == 0 && session.ActiveCount == 0 && !player.enabled && weapons.ActiveProjectiles == 0, "return to title clears and stops battle");
+            Debug.Log(failed ? "SESSION VERIFICATION FAILED" : "SESSION VERIFICATION PASSED");
             Debug.Log(failed ? "WEAPON VERIFICATION FAILED" : "WEAPON VERIFICATION PASSED");
             Debug.Log(failed ? "ENCOUNTER VERIFICATION FAILED" : "ENCOUNTER VERIFICATION PASSED");
             Debug.Log(failed ? "MOVEMENT VERIFICATION FAILED" : "MOVEMENT VERIFICATION PASSED");

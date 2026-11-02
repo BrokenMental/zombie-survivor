@@ -8,6 +8,8 @@ namespace ZombieSurvivor
         public Health Health { get; private set; }
         private EncounterSession session;
         private EnemySettings settings;
+        public EnemySettings Definition => settings;
+        private MaterialPropertyBlock appearance;
         private bool alive;
 
         private void Awake()
@@ -24,6 +26,9 @@ namespace ZombieSurvivor
             transform.position = position;
             Health.ResetHealth(data.health, 0);
             alive = true;
+            if (appearance == null) appearance = new MaterialPropertyBlock();
+            appearance.SetColor("_BaseColor", data.color);
+            GetComponent<Renderer>().SetPropertyBlock(appearance);
             gameObject.SetActive(true);
         }
 
