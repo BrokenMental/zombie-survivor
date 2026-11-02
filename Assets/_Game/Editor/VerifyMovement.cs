@@ -81,6 +81,8 @@ namespace ZombieSurvivor.Editor
             InputSystem.RemoveDevice(keyboard);
             var session = FindFirstObjectByType<EncounterSession>();
             if (session == null) { Check(false, "encounter missing"); EditorApplication.Exit(1); yield break; }
+            var weapons = session.Weapons;
+            weapons.enabled = false; // Isolate contact-damage checks from automatic fire.
             session.Restart();
             session.enabled = false; // Keep spawns under test control; enemies still run normally.
             yield return null;
@@ -120,6 +122,74 @@ namespace ZombieSurvivor.Editor
             session.Restart();
             Check(session.ActiveCount == 0 && session.Kills == 0 && session.Elapsed == 0 && session.PlayerHealth.Current == 100 && player.enabled, "restart clears encounter state");
             Check(session.PlayerHealth.TakeDamage(1), "restart clears immunity");
+            session.Restart();
+            session.TrySpawn();
+            session.TrySpawn();
+            var near = session.Enemies[0];
+            var far = session.Enemies[1];
+            near.enabled = far.enabled = false;
+            near.transform.position = new Vector3(0, 1, 4);
+            far.transform.position = new Vector3(0, 1, 6);
+            weapons.enabled = true;
+            yield return new WaitForSeconds(.28f);
+            Check(weapons.ShotsFired == 1 && near.Health.Current == 15 && far.Health.Current == 30, "pistol hits nearest enemy only");
+            weapons.SwitchWeapon();
+            yield return new WaitForSeconds(.03f);
+            Check(weapons.ShotsFired == 1, "switch must preserve shared fire interval");
+            weapons.SwitchWeapon();
+            weapons.SwitchWeapon();
+            weapons.SwitchWeapon();
+            yield return new WaitForSeconds(.03f);
+            Check(weapons.ShotsFired == 1, "repeated switches must not bypass cooldown");
+            yield return new WaitForSeconds(.35f);
+            Check(near.Health.IsDead && session.Kills == 1 && far.Health.Current == 30, "pistol second hit kills without piercing");
+            session.Restart();
+            weapons.enabled = false;
+            for (int i = 0; i < 3; i++)
+            {
+                session.TrySpawn();
+                session.Enemies[i].enabled = false;
+                session.Enemies[i].transform.position = new Vector3((i - 1) * 1.456f, 1, 4);
+            }
+            weapons.SwitchWeapon();
+            weapons.enabled = true;
+            yield return new WaitForSeconds(.05f);
+            Check(weapons.ActiveSlot == 1 && weapons.ShotsFired == 1 && weapons.ActiveProjectiles == 5, "shotgun emits five pellets");
+            yield return new WaitForSeconds(.3f);
+            Check(session.Enemies[0].Health.Current < 30 && session.Enemies[1].Health.Current < 30 && session.Enemies[2].Health.Current < 30, "shotgun spread hits multiple enemies");
+            session.Restart();
+            session.TrySpawn();
+            session.Enemies[0].enabled = false;
+            session.Enemies[0].transform.position = new Vector3(0, 1, 20);
+            yield return new WaitForSeconds(.2f);
+            Check(weapons.ShotsFired == 0, "out-of-range targets must not trigger fire");
+            session.Restart();
+            yield return new WaitForSeconds(.2f);
+            Check(weapons.ShotsFired == 0 && weapons.ActiveProjectiles == 0, "empty arena must not fire");
+            session.TrySpawn();
+            session.Enemies[0].enabled = false;
+            session.Enemies[0].transform.position = new Vector3(0, 1, 10);
+            keyboard = InputSystem.AddDevice<Keyboard>();
+            Vector3 movingStart = player.transform.position;
+            InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.A));
+            yield return new WaitForSeconds(.05f);
+            // Scan may be up to 150ms away.
+            yield return new WaitForSeconds(.15f);
+            Check(weapons.ActiveProjectiles > 0, "projectile must remain in flight before reset");
+            Check(player.transform.position.x < movingStart.x && weapons.ShotsFired > 0, "movement and automatic fire work together");
+            InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.Space));
+            yield return null;
+            yield return null;
+            Check(weapons.ActiveSlot == 1, "Space input switches weapon");
+            InputSystem.QueueStateEvent(keyboard, new KeyboardState());
+            InputSystem.RemoveDevice(keyboard);
+            session.PlayerHealth.TakeDamage(1000);
+            int shotsAtDeath = weapons.ShotsFired;
+            yield return new WaitForSeconds(.2f);
+            Check(weapons.ShotsFired == shotsAtDeath, "death stops firing");
+            session.Restart();
+            Check(weapons.ActiveSlot == 0 && weapons.ShotsFired == 0 && weapons.ActiveProjectiles == 0, "restart clears weapon and projectile state");
+            Debug.Log(failed ? "WEAPON VERIFICATION FAILED" : "WEAPON VERIFICATION PASSED");
             Debug.Log(failed ? "ENCOUNTER VERIFICATION FAILED" : "ENCOUNTER VERIFICATION PASSED");
             Debug.Log(failed ? "MOVEMENT VERIFICATION FAILED" : "MOVEMENT VERIFICATION PASSED");
             EditorApplication.Exit(failed ? 1 : 0);

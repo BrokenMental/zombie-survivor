@@ -10,6 +10,7 @@ namespace ZombieSurvivor
         public Camera ArenaCamera;
         public EnemyController EnemyPrefab;
         public EnemySettings Settings;
+        public WeaponController Weapons;
         public Health PlayerHealth { get; private set; }
         public bool IsRunning { get; private set; }
         public float Elapsed { get; private set; }
@@ -41,6 +42,7 @@ namespace ZombieSurvivor
             Kills = 0;
             nextSpawn = Settings.spawnInterval;
             IsRunning = true;
+            if (Weapons != null) Weapons.ResetWeapons();
         }
 
         private void Update()

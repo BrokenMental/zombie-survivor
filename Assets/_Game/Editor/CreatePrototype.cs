@@ -68,6 +68,47 @@ namespace ZombieSurvivor.Editor
             session.ArenaCamera = camera.GetComponent<Camera>();
             session.EnemyPrefab = prefab.GetComponent<EnemyController>();
             session.Settings = enemySettings;
+            var pistol = AssetDatabase.LoadAssetAtPath<WeaponSettings>("Assets/_Game/Data/Pistol.asset");
+            if (pistol == null)
+            {
+                pistol = ScriptableObject.CreateInstance<WeaponSettings>();
+                AssetDatabase.CreateAsset(pistol, "Assets/_Game/Data/Pistol.asset");
+            }
+            var shotgun = AssetDatabase.LoadAssetAtPath<WeaponSettings>("Assets/_Game/Data/Shotgun.asset");
+            if (shotgun == null)
+            {
+                shotgun = ScriptableObject.CreateInstance<WeaponSettings>();
+                shotgun.displayName = "Shotgun";
+                shotgun.damage = 10;
+                shotgun.interval = 1;
+                shotgun.range = 8;
+                shotgun.projectileSpeed = 20;
+                shotgun.pellets = 5;
+                shotgun.spread = 40;
+                AssetDatabase.CreateAsset(shotgun, "Assets/_Game/Data/Shotgun.asset");
+            }
+            var bulletObject = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            bulletObject.name = "Bullet";
+            bulletObject.transform.localScale = Vector3.one * .2f;
+            Object.DestroyImmediate(bulletObject.GetComponent<Collider>());
+            bulletObject.AddComponent<Projectile>();
+            var bulletPrefab = PrefabUtility.SaveAsPrefabAsset(bulletObject, "Assets/_Game/Prefabs/Bullet.prefab");
+            Object.DestroyImmediate(bulletObject);
+            var gun = new GameObject("Aim");
+            gun.transform.SetParent(player.transform, false);
+            var barrel = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            barrel.name = "Barrel";
+            Object.DestroyImmediate(barrel.GetComponent<Collider>());
+            barrel.transform.SetParent(gun.transform, false);
+            barrel.transform.localPosition = new Vector3(0, .2f, .6f);
+            barrel.transform.localScale = new Vector3(.18f, .18f, 1);
+            var weapons = player.AddComponent<WeaponController>();
+            weapons.Session = session;
+            weapons.Pistol = pistol;
+            weapons.Shotgun = shotgun;
+            weapons.ProjectilePrefab = bulletPrefab.GetComponent<Projectile>();
+            weapons.GunVisual = gun.transform;
+            session.Weapons = weapons;
             var light = new GameObject("Sun", typeof(Light));
             light.GetComponent<Light>().type = LightType.Directional;
             light.transform.rotation = Quaternion.Euler(50, -30, 0);
